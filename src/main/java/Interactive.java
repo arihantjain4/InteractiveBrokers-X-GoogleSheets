@@ -1,0 +1,230 @@
+/**
+ * add buy qty and sell qty column
+ * delete order qty, chanmge to buy and sell
+ * status (SELL)
+ * limit price buy and sell
+ *
+ */
+
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.services.sheets.v4.Sheets;
+import com.google.api.services.sheets.v4.SheetsScopes;
+import com.google.api.services.sheets.v4.model.UpdateValuesResponse;
+import com.google.api.services.sheets.v4.model.ValueRange;
+
+
+import javax.lang.model.type.PrimitiveType;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.management.MemoryManagerMXBean;
+import java.security.GeneralSecurityException;
+import java.util.*;
+
+public class Interactive {
+    private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
+    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    private static final String TOKENS_DIRECTORY_PATH = "tokens";
+    private static final String spreadsheetId = "1iGppoPwwKinUIZGv8XQDG9iRhu4mOAVwheETFBz6CXU";
+    /**
+     * Global instance of the scopes required by this quickstart.
+     * If modifying these scopes, delete your previously saved tokens/ folder.
+     */
+    private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS);
+    private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
+    static List<List<Object>> totalValues;
+    static Main main = new Main();
+    public static Sheets totalService;
+    /**
+     * Creates an authorized Credential object.
+     * @param HTTP_TRANSPORT The network HTTP Transport.
+     * @return An authorized Credential object.
+     * @throws IOException If the credentials.json file cannot be found.
+     */
+    private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
+        // Load client secrets.
+        InputStream in = Interactive.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
+        if (in == null) {
+            throw new FileNotFoundException("Resource not found: " + CREDENTIALS_FILE_PATH);
+        }
+        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
+
+        // Build flow and trigger user authorization request.
+        GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
+                HTTP_TRANSPORT, JSON_FACTORY, clientSecrets, SCOPES)
+                .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
+                .setAccessType("offline")
+                .build();
+        LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();
+        return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
+    }
+
+    /**
+     * https://docs.google.com/spreadsheets/d/1iGppoPwwKinUIZGv8XQDG9iRhu4mOAVwheETFBz6CXU/edit
+     */
+    public static void main(String... args){
+        // Build a new authorized API client service.
+        new Timer().scheduleAtFixedRate(new TimerTask(){
+            @Override
+            public void run(){
+                try {
+                    newInfo();
+                    main.mainfunc();
+                } catch (GeneralSecurityException | IOException | InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        },0,240000);
+    }
+    public static void newInfo() throws GeneralSecurityException, IOException {
+        //for every column AND ROWS, if its blank, stop, otherwise add "checkable colums" by 1
+        //HashMap<String, ArrayList<String>> rows = new HashMap<>();
+
+        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        final String totalRange = "Sheet1";
+
+        totalService = new Sheets.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+                .setApplicationName(APPLICATION_NAME)
+                .build();
+        ValueRange totalResponse = totalService.spreadsheets().values()
+                .get(spreadsheetId, totalRange)
+                .execute();
+        // the List<Object> is rows
+        totalValues = totalResponse.getValues();
+        System.out.println(totalValues);
+        if (totalValues == null || totalValues.isEmpty()) {
+            System.out.println("No data found.");
+        }
+        for (int i =0;i<totalValues.get(0).size();i++){
+            if (totalValues.get(0).get(i) == null){
+                break;
+            }
+            switch (totalValues.get(0).get(i).toString()){
+                case "Symbol":
+                    for (int j =0;j<totalValues.size();j++){
+                        List<Object> row = totalValues.get(j);
+                        if (row.size() != totalValues.get(0).size()){
+                            break;
+                        }
+                        if (j == 0){
+                            continue;
+                        }
+                        if (row.isEmpty() || row == null){
+                            break;
+                        }
+                        try {
+                            Main.tickSymbol.add(row.get(i).toString());
+                        } catch (NullPointerException e){
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+                case "Action":
+                    for (int j =0;j<totalValues.size();j++){
+                        List<Object> row = totalValues.get(j);
+                        if (row.size() != totalValues.get(0).size()){
+                            break;
+                        }
+                        if (j == 0){
+                            continue;
+
+                        }if (row.isEmpty() || row == null){
+                            break;
+                        }
+                        Main.actionString.add(row.get(i).toString());
+                    }
+                    break;
+                case "Limit price":
+                    for (int j =0;j<totalValues.size();j++){
+
+                        List<Object> row = totalValues.get(j);
+                        if (row.size() != totalValues.get(0).size()){
+                            break;
+                        }
+                        if (j == 0){
+                            continue;
+                        }
+                        if (row.isEmpty() || row == null){
+                            break;
+                        }
+                        Main.lmtPriceDouble.add(Double.parseDouble(row.get(i).toString()));
+                    }
+                    break;
+                case "Order quantity":
+                    for (int j =0;j<totalValues.size();j++){
+                        List<Object> row = totalValues.get(j);
+                        if (row.size() != totalValues.get(0).size()){
+                            break;
+                        }
+                        if (j == 0){
+                            continue;
+                        }
+                        if (row.isEmpty() || row == null){
+                            break;
+                        }
+                        Main.orderQuantity.add(Integer.parseInt(row.get(i).toString()));
+                    }
+                    break;
+                case "Status (BUY)":
+                    for (int j=0;j<totalValues.size();j++){
+                        List<Object> row = totalValues.get(j);
+                        if (row.size() != totalValues.get(0).size()){
+                            break;
+                        }
+                        if (j == 0){
+                            continue;
+                        }
+                        if (row.isEmpty() || row == null){
+                            break;
+                        }
+                        if (row.get(i).toString().equals("NEW")){
+                            Main.buyNew.add(true);
+                        } else if (row.get(i).toString().equals("PLACED") || row.get(i).toString().equals("EXECUTED")){
+                            Main.buyNew.add(false);
+                        }
+                    }
+                    break;
+                default:
+                    continue;
+            }
+
+        }
+    }
+    public static void setOrderStatus(String symbol, String newStatus, int stockAmount) throws IOException {
+        System.out.println("FROM ORDERSET FUNCTION:" + stockAmount + " " + newStatus);
+        ValueRange status = new ValueRange().setValues(Arrays.asList(
+            Arrays.asList(newStatus)
+        ));
+
+        ValueRange newQty;
+        for (int i =1;i< totalValues.size();i++){
+            if (totalValues.get(i).isEmpty() || totalValues.get(i) == null){
+                break;
+            }
+
+            if(totalValues.get(i).get(0).toString().equals(symbol)){
+                for (int j=0;j<totalValues.get(0).size();j++){
+                    if (totalValues.get(0).get(j).toString().equals("Status (BUY)")){
+                        UpdateValuesResponse resStatus = totalService.spreadsheets().values().update(spreadsheetId, main.alphabet.get(j).toString()+ String.valueOf(i+1), status).setValueInputOption("USER_ENTERED").execute();
+                    } else if (totalValues.get(0).get(j).toString().equals("Portfoilo Quantity")){
+                        int currentVal = Integer.parseInt((String) totalValues.get(i).get(j));
+                        newQty = new ValueRange().setValues(Arrays.asList(
+                                Arrays.asList(String.valueOf(currentVal + stockAmount))
+                        ));
+                        UpdateValuesResponse resQty = totalService.spreadsheets().values().update(spreadsheetId, main.alphabet.get(j).toString()+ String.valueOf(i+1), newQty).setValueInputOption("USER_ENTERED").execute();
+                    }
+                }
+            }
+        }
+    }
+}
