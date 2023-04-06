@@ -35,7 +35,7 @@ public class Interactive {
     private static final String APPLICATION_NAME = "Google Sheets API Java Quickstart";
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
-    private static final String spreadsheetId = "1iGppoPwwKinUIZGv8XQDG9iRhu4mOAVwheETFBz6CXU";
+    private static final String spreadsheetId = "ENTER_SPREADSHEET_ID_HERE";
     /**
      * Global instance of the scopes required by this quickstart.
      * If modifying these scopes, delete your previously saved tokens/ folder.
@@ -70,7 +70,7 @@ public class Interactive {
     }
 
     /**
-     * https://docs.google.com/spreadsheets/d/1iGppoPwwKinUIZGv8XQDG9iRhu4mOAVwheETFBz6CXU/edit
+     * https://docs.google.com/spreadsheets/d/ENTER_SPREADSHEET_ID_HERE/edit
      */
     public static void main(String... args){
         // Build a new authorized API client service.
